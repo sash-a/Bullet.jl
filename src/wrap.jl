@@ -1,8 +1,10 @@
 connection_state = nothing
 timer_state = nothing
 
+submit_client_command_and_wait(sm, command) = Raw.b3SubmitClientCommandAndWaitStatus(sm, command)
+
 function submit_client_command_and_wait_status_checked(sm, command; checked_status)
-    status_handle = Raw.b3SubmitClientCommandAndWaitStatus(sm, command)
+    status_handle = submit_client_command_and_wait(sm, command)
     status = Raw.EnumSharedMemoryServerStatus(Raw.b3GetStatusType(status_handle))
     if checked_status != status
         error("expected $(checked_status), got $(status)")
@@ -98,7 +100,16 @@ function load_mjcf(sm, mjcfpath; flags=0)
     Raw.b3LoadMJCFCommandSetFlags(command, flags)
 
     status_handle = submit_client_command_and_wait_status_checked(sm, command; checked_status=Raw.CMD_MJCF_LOADING_COMPLETED)
-    Raw.b3GetStatusBodyIndex(status_handle);
+    num_boddies = Raw.b3GetStatusBodyIndices(status_handle, Ref{Cint}(0), Cint(0))
+    
+    body_idx = Ref{Cint}(-1)
+    if (num_boddies == 1)
+        num_boddies = Raw.b3GetStatusBodyIndices(status_handle, body_idx, num_boddies)
+    else
+      error("there is more than 1 body in the mjcf file, can only deal with 1 body per file")
+    end
+
+    body_idx[]
 end
 
 
@@ -129,9 +140,10 @@ function c_string(data::NTuple{N,UInt8}) where {N}
     return String(SArray{Tuple{length(data)}}(data))
 end
 
+get_num_joints(sm, body_id) = Raw.b3GetNumJoints(sm, body_id)
 
 function get_all_joints(sm, body_id)
-    num_joints = Raw.b3GetNumJoints(sm, body_id)
+    num_joints = get_num_joints(sm, body_id)
     joint_names = OffsetArray{String}(undef, 0:num_joints - 1)
     link_names = OffsetArray{String}(undef, 0:num_joints - 1)
     joint_types = OffsetArray{Raw.JointType}(undef, 0:num_joints - 1)
@@ -170,6 +182,19 @@ function set_joint_position(sm, body_id, joint_id; position=nothing, velocity=no
     submit_client_command_and_wait_status_checked(sm, command_handle; checked_status=Raw.CMD_CLIENT_COMMAND_COMPLETED)
 end
 
+function set_joint_motor_control(sm, mode::Symbol, body_id::Int, joint_idx::Int; target_position=0, kp=0.1, target_velociy=0, kd=0.9, max_torque=1000)
+    Raw.b3GetNumJoints(sm, body_id)
+
+    command = Raw.b3JointControlCommandInit2(sm, body_id, 0)
+    info = get_joint_info(sm, body_id, joint_idx)
+    Raw.b3JointControlSetDesiredPosition(command, info.m_qIndex, target_position)
+    Raw.b3JointControlSetKp(command, info.m_uIndex, kp)
+    b3JointControlSetDesiredVelocity(command, info.m_uIndex, target_velociy)
+    b3JointControlSetKd(command, info.m_uIndex, kd)
+    b3JointControlSetMaximumForce(command, info.m_uIndex, max_torque)
+
+    submit_client_command_and_wait(sm, command)
+end
 
 function get_base_pose(sm, body_id)
     pointer_ref = Ref{Ptr{Cdouble}}()
@@ -234,13 +259,14 @@ end
 
 function BodyManager(sm, body_id::Integer)
     all_joints = Bullet.get_all_joints(sm, body_id)
-    BodyManager(sm, body_id,
-    map(Symbol, all_joints.joint_names),
-    map(Symbol, all_joints.link_names),
-    all_joints.joint_types,
-    Dict(Symbol(all_joints.joint_names[i]) => i for i = eachindex(all_joints.joint_names)),
-    Dict(Symbol(all_joints.link_names[i]) => i for i = eachindex(all_joints.link_names))
-  )
+    BodyManager(
+      sm, body_id,
+      map(Symbol, all_joints.joint_names),
+      map(Symbol, all_joints.link_names),
+      all_joints.joint_types,
+      Dict(Symbol(all_joints.joint_names[i]) => i for i = eachindex(all_joints.joint_names)),
+      Dict(Symbol(all_joints.link_names[i]) => i for i = eachindex(all_joints.link_names))
+    )
 end
 
 
