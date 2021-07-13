@@ -1,5 +1,8 @@
 using Match
 
+# Adapting to julia:
+# https://github.com/bulletphysics/bullet3/blob/cdd56e46411527772711da5357c856a90ad9ea67/examples/SharedMemory/b3RobotSimulatorClientAPI_NoDirect.cpp
+
 connection_state = nothing
 timer_state = nothing
 
@@ -16,20 +19,17 @@ end
 
 function reset_simulation(sm)
     submit_client_command_and_wait_status_checked(
-    sm,
-    Raw.b3InitResetSimulationCommand(sm)
-    ;
-    checked_status=Raw.CMD_RESET_SIMULATION_COMPLETED)
+        sm,
+        Raw.b3InitResetSimulationCommand(sm);
+        checked_status=Raw.CMD_RESET_SIMULATION_COMPLETED)
 end
 
 function handle_gui(sm)
-  # Just a no-op command.
+    # Just a no-op command.
     submit_client_command_and_wait_status_checked(
-    sm,
-    Raw.b3InitRequestPhysicsParamCommand(sm)
-    ;
-    checked_status=Raw.CMD_REQUEST_PHYSICS_SIMULATION_PARAMETERS_COMPLETED
-  )
+        sm,
+        Raw.b3InitRequestPhysicsParamCommand(sm);
+        checked_status=Raw.CMD_REQUEST_PHYSICS_SIMULATION_PARAMETERS_COMPLETED)
 end
 
 function setup_gui_timer()
@@ -104,14 +104,13 @@ function load_mjcf(sm, mjcfpath; flags=0)
     status_handle = submit_client_command_and_wait_status_checked(sm, command; checked_status=Raw.CMD_MJCF_LOADING_COMPLETED)
     num_boddies = Raw.b3GetStatusBodyIndices(status_handle, Ref{Cint}(0), Cint(0))
     
-    body_idx = Ref{Cint}(-1)
-    if (num_boddies == 1)
-        num_boddies = Raw.b3GetStatusBodyIndices(status_handle, body_idx, num_boddies)
-    else
-        error("there is more than 1 body in the mjcf file, can only deal with 1 body per file")
+    boddies = repeat([Cint(-1)], num_boddies)
+    boddies_ptr = pointer(boddies)
+    if (num_boddies > 0)
+        num_boddies = Raw.b3GetStatusBodyIndices(status_handle, boddies_ptr, num_boddies)
     end
 
-    body_idx[]
+    boddies
 end
 
 
@@ -257,7 +256,7 @@ function get_base_pose(sm, body_id)
 
     pos_quat = unsafe_wrap(Array, pointer_ref[], (7,), own=false)
     pos = SVector(pos_quat[1:3]...)
-
+    
     quat = let (x, y, z, w) = pos_quat[4:7]
         CoordinateTransformations.Rotations.Quat(w, x, y, z, false)
     end
@@ -290,7 +289,7 @@ function get_links_poses(sm, body_id)
     Raw.b3GetLinkState(sm, status_handle, link_index, link_state_ref)
     return link_state_ref[]
 end
-
+    
 
 struct BodyManager
     sm::Ptr{Raw.b3PhysicsClientHandle__}
