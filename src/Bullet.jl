@@ -33,7 +33,7 @@ const LINK_ID_NONE = -1
 
 include("bullet_julia_types.jl")
 include("load.jl")
-include("wrap.jl")
+include("wrapper/wrapper.jl")
 include("rigid_body_dynamics.jl")
 # include("cxx.jl")
 
