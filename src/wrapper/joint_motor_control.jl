@@ -1,6 +1,6 @@
 using Match
 
-function _setup_joint_motor_control(sm, mode::Symbol, body_id, joint_idx)
+function _setup_joint_motor_control(sm::Sim, mode::Symbol, body_id, joint_idx)
     mode_map = Dict(:velocity => 0, :torque => 1, :position => 2)
 
     if !haskey(mode_map, mode)
@@ -13,7 +13,7 @@ function _setup_joint_motor_control(sm, mode::Symbol, body_id, joint_idx)
     (command, info)
 end
 
-function set_joint_motor_control(sm, mode::Symbol, body_id::Int, joint_idx::Int; target_position::Float64=0., target_velocity::Float64=0., kp::Float64=0.1, kd::Float64=0.9, max_torque::Float64=1000.)
+function set_joint_motor_control(sm::Sim, mode::Symbol, body_id::Int, joint_idx::Int; target_position::Float64=0., target_velocity::Float64=0., kp::Float64=0.1, kd::Float64=0.9, max_torque::Float64=1000.)
     @match mode begin
         :position => set_joint_motor_control(sm, body_id, joint_idx, target_position, target_velocity, kp, kd, max_torque)
         :velocity => set_joint_motor_control(sm, body_id, joint_idx, target_velocity, kd, max_torque)
@@ -22,7 +22,7 @@ function set_joint_motor_control(sm, mode::Symbol, body_id::Int, joint_idx::Int;
     end
 end
 
-function set_joint_motor_control(sm, body_id::Int, joint_idx::Int, target_position::Float64, target_velocity::Float64, kp::Float64, kd::Float64, max_torque::Float64)
+function set_joint_motor_control(sm::Sim, body_id::Int, joint_idx::Int, target_position::Float64, target_velocity::Float64, kp::Float64, kd::Float64, max_torque::Float64)
     command, info = _setup_joint_motor_control(sm, :position, body_id, joint_idx)
 
     Raw.b3JointControlSetDesiredPosition(command, info.m_qIndex, target_position)
@@ -33,9 +33,9 @@ function set_joint_motor_control(sm, body_id::Int, joint_idx::Int, target_positi
 
     submit_client_command_and_wait(sm, command)
 end
-set_joint_motor_velocity(sm, body_id::Int, joint_idx::Int; target_position=0., target_velocity=0., kp=0.1, kd=0.9, max_torque=1000.) = set_joint_motor_control(sm, body_id::Int, joint_idx::Int, target_position::Float64, target_velocity::Float64, kp::Float64, kd::Float64, max_torque::Float64)
+set_joint_motor_position(sm::Sim, body_id::Int, joint_idx::Int; target_position=0., target_velocity=0., kp=0.1, kd=0.9, max_torque=1000.) = set_joint_motor_control(sm, body_id, joint_idx, target_position, target_velocity, kp, kd, max_torque)
 
-function set_joint_motor_control(sm, body_id::Int, joint_idx::Int, target_velocity::Float64, kd::Float64, max_torque::Float64)
+function set_joint_motor_control(sm::Sim, body_id::Int, joint_idx::Int, target_velocity::Float64, kd::Float64, max_torque::Float64)
     command, info = _setup_joint_motor_control(sm, :velocity, body_id, joint_idx)
 
     uIndex = info.m_uIndex
@@ -45,9 +45,9 @@ function set_joint_motor_control(sm, body_id::Int, joint_idx::Int, target_veloci
         Raw.b3JointControlSetMaximumForce(command, uIndex, max_torque)
     end
 end
-set_joint_motor_velocity(sm, body_id::Int, joint_idx::Int; target_velocity=0., kd=0.9, max_torque=1000.) = set_joint_motor_control(sm, body_id::Int, joint_idx::Int, target_velocity::Float64, kd::Float64, max_torque::Float64)
+set_joint_motor_velocity(sm::Sim, body_id::Int, joint_idx::Int; target_velocity=0., kd=0.9, max_torque=1000.) = set_joint_motor_control(sm, body_id, joint_idx, target_velocity, kd, max_torque)
 
-function set_joint_motor_control(sm, body_id::Int, joint_idx::Int, torque::Float64)
+function set_joint_motor_control(sm::Sim, body_id::Int, joint_idx::Int, torque::Float64)
     command, info = _setup_joint_motor_control(sm, :torque, body_id, joint_idx)
 
     uIndex = info.m_uIndex;
@@ -56,4 +56,4 @@ function set_joint_motor_control(sm, body_id::Int, joint_idx::Int, torque::Float
         submit_client_command_and_wait(sm, command)
     end
 end
-set_joint_motor_torque(sm, body_id::Int, joint_idx::Int, torque::Float64) = set_joint_motor_control(sm, body_id::Int, joint_idx::Int, torque::Float64)
+set_joint_motor_torque(sm::Sim, body_id::Int, joint_idx::Int, torque::Float64) = set_joint_motor_control(sm, body_id, joint_idx, torque)

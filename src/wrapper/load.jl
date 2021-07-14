@@ -1,4 +1,4 @@
-function load_urdf(sm, urdfpath; position=[0, 0, 0], orientation=[0, 0, 0, 1], flags=0)
+function load_urdf(sm::Sim, urdfpath::String; position=[0, 0, 0], orientation=[0, 0, 0, 1], flags=0)
     command = Raw.b3LoadUrdfCommandInit(sm, urdfpath)
     Raw.b3LoadUrdfCommandSetFlags(command, flags)
 
@@ -10,7 +10,7 @@ function load_urdf(sm, urdfpath; position=[0, 0, 0], orientation=[0, 0, 0, 1], f
     return bodyUniqueId
 end
 
-function load_mjcf(sm, mjcfpath; flags=0)
+function load_mjcf(sm::Sim, mjcfpath::String; flags=0)
     command = Raw.b3LoadMJCFCommandInit(sm, mjcfpath)
     Raw.b3LoadMJCFCommandSetFlags(command, flags)
 

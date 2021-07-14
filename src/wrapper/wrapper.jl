@@ -1,3 +1,8 @@
+# Adapting to julia:
+# https://github.com/bulletphysics/bullet3/blob/cdd56e46411527772711da5357c856a90ad9ea67/examples/SharedMemory/b3RobotSimulatorClientAPI_NoDirect.cpp
+
+Sim = Ptr{Bullet.Raw.b3PhysicsClientHandle__}
+
 include("util.jl")
 include("initialize.jl")
 include("sim.jl")

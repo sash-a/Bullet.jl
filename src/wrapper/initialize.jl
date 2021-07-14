@@ -29,8 +29,8 @@ function connect(;kind=:direct, do_reset_sim=true,)
             handle = Raw.b3ConnectPhysicsDirect()
             connection_state = (kind = kind, handle = handle)
         elseif kind == :gui
-      handle = Raw.b3CreateInProcessPhysicsServerAndConnectMainThread(0, [])
-      connection_state = (kind = kind, handle = handle)
+            handle = Raw.b3CreateInProcessPhysicsServerAndConnectMainThread(0, [])
+            connection_state = (kind = kind, handle = handle)
         end
 
         if connection_state === nothing

@@ -1,4 +1,4 @@
-function get_base_pose(sm, body_id)
+function get_base_pose(sm::Sim, body_id)
     pointer_ref = Ref{Ptr{Cdouble}}()
 
     command_handle = Raw.b3RequestActualStateCommandInit(sm, body_id)
@@ -23,7 +23,7 @@ function get_base_pose(sm, body_id)
 end
 
 
-function set_base_pose(sm, body_id, transformation)
+function set_base_pose(sm::Sim, body_id, transformation)
     command_handle = Raw.b3CreatePoseCommandInit(sm, body_id)
 
     translation = transformation.translation
@@ -36,7 +36,7 @@ function set_base_pose(sm, body_id, transformation)
 end
 
 
-function get_links_poses(sm, body_id)
+function get_links_poses(sm::Sim, body_id)
     command_handle = Raw.b3RequestActualStateCommandInit(sm, body_id)
     Raw.b3RequestActualStateCommandComputeForwardKinematics(command_handle, true)
     status_handle = submit_client_command_and_wait_status_checked(sm, command_handle; checked_status=Raw.CMD_ACTUAL_STATE_UPDATE_COMPLETED)
@@ -59,7 +59,7 @@ struct BodyManager
 end
 
 
-function BodyManager(sm, body_id::Integer)
+function BodyManager(sm::Sim, body_id::Integer)
     all_joints = Bullet.get_all_joints(sm, body_id)
     BodyManager(
       sm, body_id,

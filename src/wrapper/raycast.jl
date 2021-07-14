@@ -1,4 +1,4 @@
-function raycast(sm, ray_from, ray_to)
+function raycast(sm::Sim, ray_from, ray_to)
     command_handle = Safe.CreateRaycastCommandInit(sm, ray_from, ray_to)
     status_handle = submit_client_command_and_wait_status_checked(sm, command_handle; checked_status=Raw.CMD_REQUEST_RAY_CAST_INTERSECTIONS_COMPLETED)
     rci_ref = Ref{Raw.b3RaycastInformation}()
@@ -10,7 +10,7 @@ function raycast(sm, ray_from, ray_to)
     return ray_hit
 end
 
-function raycast_batch(sm, rays_from::Array{Cdouble,2}, rays_to::Array{Cdouble,2}, )
+function raycast_batch(sm::Sim, rays_from::Array{Cdouble,2}, rays_to::Array{Cdouble,2}, )
   # must ensure memory layout matches Bullet's
     @assert size(rays_from, 1) == 3
     @assert size(rays_to, 1) == 3
